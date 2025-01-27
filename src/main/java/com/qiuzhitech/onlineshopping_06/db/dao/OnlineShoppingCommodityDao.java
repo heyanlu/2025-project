@@ -7,4 +7,8 @@ import java.util.List;
 public interface OnlineShoppingCommodityDao {
     int insertCommodity(OnlineShoppingCommodity commodity);
     List<OnlineShoppingCommodity> listCommodities();
+
+    List<OnlineShoppingCommodity> listCommoditiesByUserId(Long sellerId);
+    OnlineShoppingCommodity getCommodityDetail(Long commodityId);
+    int updateCommodity(OnlineShoppingCommodity commodityDetail);
 }
