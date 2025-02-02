@@ -42,4 +42,9 @@ public class OnlineShoppingCommodityDaoImpl implements OnlineShoppingCommodityDa
     public int updateCommodity(OnlineShoppingCommodity commodityDetail) {
         return onlineShoppingCommodityMapper.updateByPrimaryKey(commodityDetail);
     }
+
+    @Override
+    public int deductStockWithCommodityId(Long commodityId) {
+        return onlineShoppingCommodityMapper.deductStockWithCommodityId(commodityId);
+    }
 }

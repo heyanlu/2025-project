@@ -21,6 +21,9 @@ public class OrderService {
     @Resource
     OnlineShoppingCommodityDao commodityDao;
 
+    @Resource
+    RedisService redisService;
+
     public OnlineShoppingOrder createOrder(String commodityId, String userId) {
         OnlineShoppingOrder order = OnlineShoppingOrder.builder()
                 .orderNo(UUID.randomUUID().toString())
@@ -55,11 +58,35 @@ public class OrderService {
             return null;
         }
     }
+    public OnlineShoppingOrder placeOrderOneSQL(String commodityId, String userId) {
+        int result = commodityDao.deductStockWithCommodityId(Long.valueOf(commodityId));
+        if (result > 0) {
+            OnlineShoppingOrder order = createOrder(commodityId, userId);
+            orderDao.insertOrder(order);
+            log.info("Place order successfully, orderNum:" +  order.getOrderNo());
+            return order;
+        } else {
+            log.warn("commodity out of stock, commodityId:" + commodityId);
+            return null;
+        }
+    }
 
+    public OnlineShoppingOrder placeOrderRedis(String commodityId, String userId) {
+        String redisKey = "commodity:" + commodityId;
+        long result = redisService.stockDeduct(redisKey);
+
+        if (result >= 0) {
+            OnlineShoppingOrder order = placeOrderOneSQL(commodityId, userId);
+            log.info("Place order successfully, orderNum:" +  order.getOrderNo());
+            return order;
+        } else {
+            log.warn("commodity out of stock, commodityId:" + commodityId);
+            return null;
+        }
+    }
     public OnlineShoppingOrder queryOrderByOrderNum(String orderNum) {
         return orderDao.queryOrderByOrderNo(orderNum);
     }
-
     public void payOrder(String orderNum) {
         OnlineShoppingOrder order = queryOrderByOrderNum(orderNum);
         order.setOrderStatus(2);

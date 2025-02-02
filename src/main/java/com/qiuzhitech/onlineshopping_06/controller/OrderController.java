@@ -26,7 +26,10 @@ public class OrderController {
     public String buyCommodity(@PathVariable("userId") String userId,
                                @PathVariable("commodityId") String commodityId,
                                Map<String, Object> resultMap) {
-        OnlineShoppingOrder order = orderService.placeOrderOriginal(commodityId, userId);
+//        OnlineShoppingOrder order = orderService.placeOrderOriginal(commodityId, userId);
+//        OnlineShoppingOrder order = orderService.placeOrderOneSQL(commodityId, userId);
+        OnlineShoppingOrder order = orderService.placeOrderRedis(commodityId, userId);
+        //placeOrderRedis
         if (order != null) {
             resultMap.put("resultInfo", "Create Order " + order.getOrderNo() + " successfully!");
             resultMap.put("orderNo", order.getOrderNo());
