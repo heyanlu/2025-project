@@ -84,6 +84,20 @@ public class OrderService {
             return null;
         }
     }
+
+    public OnlineShoppingOrder placeOrderDistributedLock(String commodityId, String userId) {
+        String redisKey = "commodityLock:" + commodityId;
+        String requestId = UUID.randomUUID().toString();
+        boolean result = redisService.tryToGetDistributedLock(redisKey, requestId, 5000);
+        if (result) {
+            OnlineShoppingOrder order = placeOrderOneSQL(commodityId, userId);
+            redisService.releaseDistributedLock(redisKey, requestId);
+            return order;
+        } else {
+            log.warn("processOrderRedis failed due to not fetching Lock, please try again latter, commodityId:" + commodityId);
+            return null;
+        }
+    }
     public OnlineShoppingOrder queryOrderByOrderNum(String orderNum) {
         return orderDao.queryOrderByOrderNo(orderNum);
     }
