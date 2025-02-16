@@ -40,10 +40,9 @@ public class RedisService {
                 " then return redis.call('del', KEYS[1])" +
                 " else return 0 end";
         Long result = (Long)jedis.eval(script);
+        jedis.close();
         return result == 1L;
     }
-
-
 
     public long stockDeduct(String redisKey) {
         try(Jedis jedisClient =jedisPool.getResource()) {
@@ -71,5 +70,41 @@ public class RedisService {
             log.error("Redis failed on stockDeduct");
             return -1;
         }
+    }
+
+    public long revertStock(String redisKey) {
+        Jedis jedis = jedisPool.getResource();
+        Long incr = jedis.incr(redisKey);
+        jedis.close();
+        return incr;
+    }
+
+    public void addToDenyList(String userId, String commodityId) {
+        Jedis jedis = jedisPool.getResource();
+        // key: denyList:123
+        // values: set of {1,2}
+        jedis.sadd("denyList:" + userId, commodityId);
+        jedis.close();
+        log.info("Add userId: {} into denyList for commodityId: {}", userId, commodityId);
+    }
+
+    public void removeFromDenyList(String userId, String commodityId) {
+        Jedis jedis = jedisPool.getResource();
+        // key: denyList:123
+        // values: set of {1,2,3} ==> {2,3}
+        jedis.srem("denyList:" + userId, commodityId);
+        jedis.close();
+        log.info("Remove userId: {} into denyList for commodityId: {}", userId, commodityId);
+    }
+
+    public boolean isInDenyList(String userId, String commodityId) {
+        Jedis jedis = jedisPool.getResource();
+        // key: denyList:123
+        // values: set of {1,2,3} ==> {2,3}
+        Boolean isInDenyList = jedis.sismember("denyList:" + userId, commodityId);
+        jedis.close();
+        log.info("userId: {} , commodityId {} is InDenyList result: {}", userId, commodityId,
+                isInDenyList);
+        return isInDenyList;
     }
 }

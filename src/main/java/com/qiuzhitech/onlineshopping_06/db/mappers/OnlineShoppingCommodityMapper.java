@@ -22,4 +22,6 @@ public interface OnlineShoppingCommodityMapper {
     List<OnlineShoppingCommodity> listCommoditiesByUserId(Long userId);
 
     int deductStockWithCommodityId(Long commodityId);
+
+    int revertStockWithCommodityId(Long commodityId);
 }

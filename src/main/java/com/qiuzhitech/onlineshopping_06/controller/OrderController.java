@@ -29,7 +29,8 @@ public class OrderController {
 //        OnlineShoppingOrder order = orderService.placeOrderOriginal(commodityId, userId);
 //        OnlineShoppingOrder order = orderService.placeOrderOneSQL(commodityId, userId);
 //        OnlineShoppingOrder order = orderService.placeOrderRedis(commodityId, userId);
-        OnlineShoppingOrder order = orderService.placeOrderDistributedLock(commodityId, userId);
+//        OnlineShoppingOrder order = orderService.placeOrderDistributedLock(commodityId, userId);
+        OnlineShoppingOrder order = orderService.placeOrderFinal(commodityId, userId);
 
         if (order != null) {
             resultMap.put("resultInfo", "Create Order " + order.getOrderNo() + " successfully!");

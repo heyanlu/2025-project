@@ -1,11 +1,14 @@
 package com.qiuzhitech.onlineshopping_06.service;
 
 
+import com.alibaba.fastjson.JSON;
 import com.qiuzhitech.onlineshopping_06.db.dao.OnlineShoppingCommodityDao;
 import com.qiuzhitech.onlineshopping_06.db.dao.OnlineShoppingOrderDao;
 import com.qiuzhitech.onlineshopping_06.db.po.OnlineShoppingCommodity;
 import com.qiuzhitech.onlineshopping_06.db.po.OnlineShoppingOrder;
+import com.qiuzhitech.onlineshopping_06.service.mq.RocketMQService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -23,6 +26,9 @@ public class OrderService {
 
     @Resource
     RedisService redisService;
+
+    @Resource
+    private RocketMQService rocketMQService;
 
     public OnlineShoppingOrder createOrder(String commodityId, String userId) {
         OnlineShoppingOrder order = OnlineShoppingOrder.builder()
@@ -85,6 +91,29 @@ public class OrderService {
         }
     }
 
+    public OnlineShoppingOrder placeOrderFinal(String commodityId, String userId) {
+        if (redisService.isInDenyList(userId, commodityId)) {
+            log.info("Each user have only one quote for this commodity");
+            return null;
+        }
+
+        String redisKey = "commodity:" + commodityId;
+        long result = redisService.stockDeduct(redisKey);
+        // 0: invalid order
+        // 1. pending payment
+        // 2. finish payment
+        // 99. overtime order
+        if (result >= 0) {
+            OnlineShoppingOrder order = createOrder(commodityId, userId);
+            rocketMQService.sendMessage("createOrder", JSON.toJSONString(order));
+            redisService.addToDenyList(userId, commodityId);
+            return order;
+        } else {
+            log.warn("commodity out of stock, commodityId:" + commodityId);
+            return null;
+        }
+    }
+
     public OnlineShoppingOrder placeOrderDistributedLock(String commodityId, String userId) {
         String redisKey = "commodityLock:" + commodityId;
         String requestId = UUID.randomUUID().toString();
@@ -98,6 +127,7 @@ public class OrderService {
             return null;
         }
     }
+
     public OnlineShoppingOrder queryOrderByOrderNum(String orderNum) {
         return orderDao.queryOrderByOrderNo(orderNum);
     }
