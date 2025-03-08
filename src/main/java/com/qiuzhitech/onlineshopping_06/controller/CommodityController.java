@@ -2,10 +2,13 @@ package com.qiuzhitech.onlineshopping_06.controller;
 
 import com.qiuzhitech.onlineshopping_06.db.dao.OnlineShoppingCommodityDao;
 import com.qiuzhitech.onlineshopping_06.db.po.OnlineShoppingCommodity;
+import com.qiuzhitech.onlineshopping_06.service.EsService;
+import com.qiuzhitech.onlineshopping_06.service.SearchService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +16,12 @@ import java.util.Map;
 public class CommodityController {
     @Resource
     OnlineShoppingCommodityDao commodityDao;
+
+    @Resource
+    SearchService searchService;
+
+    @Resource
+    EsService esService;
 
     @RequestMapping("/addItem")
     public String addCommodity() {
@@ -25,7 +34,7 @@ public class CommodityController {
                                @RequestParam("price") int price,
                                @RequestParam("availableStock") int availableStock,
                                @RequestParam("creatorUserId") long creatorUserId,
-                               Map<String, Object> resultMap) {
+                               Map<String, Object> resultMap) throws IOException {
         OnlineShoppingCommodity commodity = OnlineShoppingCommodity.builder()
                 .commodityId(commodityId)
                 .commodityName(commodityName)
@@ -37,8 +46,17 @@ public class CommodityController {
                 .lockStock(0)
                 .build();
         commodityDao.insertCommodity(commodity);
+        esService.addCommodity(commodity);
         resultMap.put("Item", commodity);
         return "add_commodity_success";
+    }
+
+    @GetMapping("searchAction")
+    public String searchAction(@RequestParam("keyWord") String keyword,
+                               Map<String, Object> resultMap) {
+        List<OnlineShoppingCommodity> onlineShoppingCommodities = searchService.searchCommodityWithEs(keyword);
+        resultMap.put("itemList", onlineShoppingCommodities);
+        return "search_items";
     }
 
     @GetMapping("/commodities/{sellerId}")

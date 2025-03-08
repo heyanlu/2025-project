@@ -1,10 +1,12 @@
 package com.qiuzhitech.onlineshopping_06.db.po;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 @Builder
 @Data
+@AllArgsConstructor
 public class OnlineShoppingCommodity {
     private Long commodityId;
 

@@ -2,6 +2,7 @@ package com.qiuzhitech.onlineshopping_06.component;
 
 import com.qiuzhitech.onlineshopping_06.db.dao.OnlineShoppingCommodityDao;
 import com.qiuzhitech.onlineshopping_06.db.po.OnlineShoppingCommodity;
+import com.qiuzhitech.onlineshopping_06.service.EsService;
 import com.qiuzhitech.onlineshopping_06.service.RedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -19,6 +20,10 @@ public class RedisPreHeatRunner implements ApplicationRunner {
 
     @Resource
     RedisService redisService;
+
+    @Resource
+    EsService esService;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // read from MYSQL
@@ -27,6 +32,7 @@ public class RedisPreHeatRunner implements ApplicationRunner {
         for (OnlineShoppingCommodity commodity: onlineShoppingCommodities) {
             String redisKey = "commodity:" + commodity.getCommodityId();
             redisService.setValue(redisKey, commodity.getAvailableStock().toString());
+            esService.addCommodity(commodity);
             log.info("preHeat Staring: Initialize commodity :" + commodity.getCommodityId());
         }
     }

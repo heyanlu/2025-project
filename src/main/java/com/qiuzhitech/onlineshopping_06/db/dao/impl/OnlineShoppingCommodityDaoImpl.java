@@ -52,4 +52,10 @@ public class OnlineShoppingCommodityDaoImpl implements OnlineShoppingCommodityDa
     public int revertStockWithCommodityId(Long commodityId) {
         return onlineShoppingCommodityMapper.revertStockWithCommodityId(commodityId);
     }
+
+    @Override
+    public List<OnlineShoppingCommodity> searchCommodityByKeyWord(String keyWord) {
+        String keywordPattern = "%" + keyWord + "%";
+        return onlineShoppingCommodityMapper.searchCommodityByKeyWord(keywordPattern);
+    }
 }
