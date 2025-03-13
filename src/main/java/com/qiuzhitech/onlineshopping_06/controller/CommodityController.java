@@ -1,18 +1,29 @@
 package com.qiuzhitech.onlineshopping_06.controller;
 
+import com.alibaba.csp.sentinel.Entry;
+import com.alibaba.csp.sentinel.EntryType;
+import com.alibaba.csp.sentinel.SphU;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
+import com.alibaba.csp.sentinel.slots.block.RuleConstant;
+import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
+import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import com.qiuzhitech.onlineshopping_06.db.dao.OnlineShoppingCommodityDao;
 import com.qiuzhitech.onlineshopping_06.db.po.OnlineShoppingCommodity;
 import com.qiuzhitech.onlineshopping_06.service.EsService;
 import com.qiuzhitech.onlineshopping_06.service.SearchService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Controller
+@Slf4j
 public class CommodityController {
     @Resource
     OnlineShoppingCommodityDao commodityDao;
@@ -62,9 +73,15 @@ public class CommodityController {
     @GetMapping("/commodities/{sellerId}")
     public String listCommoditiesBySellerId(@PathVariable("sellerId") Long sellerId,
                                             Map<String, Object> resultMap) {
-        List<OnlineShoppingCommodity> onlineShoppingCommodities = commodityDao.listCommoditiesByUserId(sellerId);
-        resultMap.put("itemList", onlineShoppingCommodities);
-        return "list_items";
+        try (Entry entry = SphU.entry("listItemsRule",  EntryType.IN, 1, sellerId)) {
+            List<OnlineShoppingCommodity> onlineShoppingCommodities = commodityDao.listCommoditiesByUserId(sellerId);
+            resultMap.put("itemList", onlineShoppingCommodities);
+            return "list_items";
+        } catch (BlockException e) {
+            log.error("ListItems got throttled" + e.toString());
+            return "wait";
+        }
+
     }
     @GetMapping({"/commodities","/"})
     public String listCommodities(Map<String, Object> resultMap) {
@@ -79,6 +96,26 @@ public class CommodityController {
         OnlineShoppingCommodity commodity = commodityDao.getCommodityDetail(commodityId);
         resultMap.put("commodity", commodity);
         return "item_detail";
+    }
+
+    @PostConstruct
+    public void CommodityControllerFlow() {
+
+        List<FlowRule> rules = new ArrayList<>();
+
+        FlowRule rule = new FlowRule();
+// Define resource
+        rule.setResource("listItemsRule");
+        rule.setGrade(RuleConstant.FLOW_GRADE_QPS);
+//Define QPS count
+        rule.setCount(1);
+//        FlowRule rule2 = new FlowRule();
+//        rule2.setGrade(RuleConstant.FLOW_GRADE_QPS);
+//        rule2.setCount(2);
+//        rule2.setResource("HelloResource");
+        rules.add(rule);
+//        rules.add(rule2);
+        FlowRuleManager.loadRules(rules);
     }
 
 }
